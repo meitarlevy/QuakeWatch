@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request, send_file, current_app
-from utils import generate_graph, get_top_earthquakes, get_last_earthquake, COUNTRIES
+from app.utils import generate_graph, get_top_earthquakes, get_last_earthquake, COUNTRIES
 from datetime import datetime, timedelta
 import requests
 

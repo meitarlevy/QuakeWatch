@@ -5,8 +5,8 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from flask import Flask
-from dashboard import dashboard_blueprint
-from utils import timestamp_to_str  # Import our custom filter
+from app.dashboard import dashboard_blueprint
+from app.utils import timestamp_to_str  # Import our custom filter
 
 def create_app():
     app = Flask(__name__)
