@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: quake-watch-health-check
+
+spec:
+  schedule: "*/1 * * * *"  # כל דקה
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: health-check
+              image: curlimages/curl:latest
+              args:
+                - /bin/sh
+                - -c
+                - >
+                  echo "Checking QuakeWatch service...";
+                  curl -s -o /dev/null -w "%{http_code}" http://quake-watch-service:80;
+                  echo " - done";
+          restartPolicy: OnFailure

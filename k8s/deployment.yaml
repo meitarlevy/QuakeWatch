@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quake-watch-deployment
+  labels:
+    app: quake-watch
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: quake-watch
+
+  template:
+    metadata:
+      labels:
+        app: quake-watch
+
+    spec:
+      containers:
+        - name: quake-watch
+          image: meitarle/quake-watch:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 5000
+
+          # -------------------------
+          # Resource limits (for HPA)
+          # -------------------------
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+          # -------------------------
+          # Readiness Probe
+          # -------------------------
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+
+          # -------------------------
+          # Liveness Probe
+          # -------------------------
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
