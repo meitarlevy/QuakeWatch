@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: quake-watch
-          image: meitarle/quake-watch:latest
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
 
           ports:

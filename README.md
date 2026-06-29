@@ -1,34 +1,51 @@
-# 🌍 QuakeWatch - Docker & Kubernetes Orchestrated Application
+# 🌍 QuakeWatch - Full DevOps & GitOps Kubernetes Application
 
 ## 📌 Overview
-QuakeWatch is a Flask-based application that visualizes and manages earthquake data.
 
-This project demonstrates a complete DevOps workflow including:
-- Containerization with Docker
-- Local orchestration with Docker Compose
-- Kubernetes deployment on Docker Desktop
-- Auto-scaling using HPA
-- Health monitoring using Liveness & Readiness Probes
-- Automated checks using CronJob
+QuakeWatch is a Flask-based application for visualizing and managing earthquake data.
+
+This project demonstrates a complete **DevOps + GitOps workflow**, including:
+
+* Containerization with Docker
+* Local orchestration with Docker Compose
+* Kubernetes deployment on Docker Desktop
+* Helm-based packaging
+* Auto-scaling using HPA
+* Health monitoring using Liveness & Readiness Probes
+* Automated cluster checks using CronJobs
+* GitOps deployment using ArgoCD
 
 ---
 
 ## 🧱 Architecture
 
-The application runs as:
-- A Flask app inside a Docker container
-- Deployed on Kubernetes as a Deployment
-- Exposed using a Kubernetes Service
-- Automatically scaled using HPA
-- Monitored using Kubernetes Probes
-- Periodically checked using a CronJob inside the cluster
+The system follows a GitOps-driven architecture:
+
+```
+GitHub Repository
+        ↓
+     ArgoCD
+        ↓
+      Helm Chart
+        ↓
+   Kubernetes Cluster
+```
+
+Application flow:
+
+* Flask app runs in a Docker container
+* Deployed via Helm chart
+* Managed in Kubernetes as a Deployment
+* Exposed using a Service
+* Automatically scaled using HPA
+* Continuously monitored using probes
+* Periodically checked using CronJob
 
 ---
 
 ## 📁 Project Structure
 
 ```
-
 QuakeWatch/
 ├── app/
 │   ├── app.py
@@ -37,27 +54,36 @@ QuakeWatch/
 │   ├── requirements.txt
 │   ├── static/
 │   └── templates/
-├── k8s/
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   ├── configmap.yaml
-│   ├── secret.yaml
-│   ├── hpa.yaml
-│   └── cronjob.yaml
+│
+├── helm/
+│   └── quakewatch/
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       └── templates/
+│           ├── deployment.yaml
+│           ├── service.yaml
+│           ├── hpa.yaml
+│           ├── cronjob.yaml
+│           ├── configmap.yaml
+│           └── secret.yaml
+│
+├── argocd/
+│   └── application.yaml
+│
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
-
-````
+```
 
 ---
 
 ## 🐳 Docker Setup
 
-### Build Docker Image
+### Build Image
+
 ```bash
 docker build -t meitarle/quake-watch:latest .
-````
+```
 
 ### Run Locally
 
@@ -67,25 +93,31 @@ docker run -p 5000:5000 meitarle/quake-watch:latest
 
 ---
 
-## ☸️ Kubernetes Deployment
+## ☸️ Kubernetes Deployment (Helm)
 
-### Apply all Kubernetes resources
+### Install via Helm
 
 ```bash
-kubectl apply -f k8s/
+helm install quakewatch helm/quakewatch -n class4
+```
+
+### Upgrade release
+
+```bash
+helm upgrade quakewatch helm/quakewatch -n class4
 ```
 
 ---
 
-## 🚀 Access the Application
+## 🚀 Access Application
 
-Since this project runs on Docker Desktop Kubernetes:
+Using port-forward:
 
 ```bash
-kubectl port-forward service/quake-watch-service 8080:80
+kubectl port-forward service/quake-watch-service 8080:80 -n class4
 ```
 
-Then open in browser:
+Open:
 
 ```
 http://localhost:8080
@@ -93,78 +125,91 @@ http://localhost:8080
 
 ---
 
+## 🔄 GitOps (ArgoCD)
+
+ArgoCD automatically syncs the application from GitHub.
+
+### Apply ArgoCD Application
+
+```bash
+kubectl apply -f argocd/application.yaml
+```
+
+### Check status
+
+```bash
+kubectl get applications -n argocd
+```
+
+Expected output:
+
+* Sync: Synced
+* Health: Healthy
+
+---
+
 ## ⚙️ Kubernetes Components
 
 ### 📦 Deployment
 
-Manages application pods and ensures high availability using replicas.
-
----
+Manages replicas of the Flask application.
 
 ### 🌐 Service
 
-Exposes the application inside the cluster and via NodePort/port-forward.
+Exposes the application inside the cluster.
 
----
-
-### ⚙️ ConfigMap
-
-Stores non-sensitive configuration values for the application.
-
----
-
-### 🔐 Secret
-
-Stores sensitive data such as API keys or credentials.
-
----
-
-### 🧠 Liveness & Readiness Probes
-
-Ensures application health:
-
-* Readiness Probe: ensures pod is ready to receive traffic
-* Liveness Probe: restarts pod if application becomes unhealthy
-
----
-
-### 📈 Horizontal Pod Autoscaler (HPA)
+### 📈 HPA (Horizontal Pod Autoscaler)
 
 Automatically scales pods based on CPU usage:
 
-* Minimum replicas: 2
-* Maximum replicas: 5
-* CPU utilization threshold: 50%
+* Min replicas: 2
+* Max replicas: 5
+* Target CPU: 50%
 
----
+### 🧠 Probes
+
+* Liveness Probe: restarts unhealthy pods
+* Readiness Probe: ensures traffic is only sent to ready pods
 
 ### ⏱ CronJob
 
-Runs periodic health checks inside the cluster:
+Runs periodic health checks inside the cluster every minute.
 
-* Executes every 1 minute
-* Sends HTTP request to the service
-* Logs response status
+### 🔐 ConfigMap & Secret
+
+Stores configuration and sensitive values separately from code.
 
 ---
 
-## 🧪 Useful Kubernetes Commands
+## 🧪 Useful Commands
 
 ```bash
-kubectl get pods
-kubectl get services
-kubectl get deployments
-kubectl get hpa
-kubectl get cronjob
-kubectl top pods
+kubectl get all -n class4
+kubectl get hpa -n class4
+kubectl top pods -n class4
+kubectl get pods -n argocd
+helm list -n class4
 ```
 
 ---
 
 ## 📌 Notes
 
-* The project runs on Docker Desktop Kubernetes
-* Use `kubectl port-forward` instead of NodePort when accessing locally
+* This project runs on Docker Desktop Kubernetes
 * Metrics-server is required for HPA functionality
-* HPA may not scale if CPU usage is low (this is expected behavior)
+* HPA may remain stable if CPU load is low (expected behavior)
+* ArgoCD enables full GitOps automation (no manual deployments)
 
+---
+
+# 🏁 Summary
+
+This project demonstrates a complete production-style DevOps workflow:
+
+✔ Docker containerization
+✔ Kubernetes orchestration
+✔ Helm packaging
+✔ Auto-scaling (HPA)
+✔ Monitoring (Probes + Metrics)
+✔ Automation (CronJob)
+✔ GitOps (ArgoCD)
